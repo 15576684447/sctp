@@ -70,6 +70,8 @@ func (s *Stream) SetReliabilityParams(unordered bool, relType byte, relVal uint3
 // setReliabilityParams sets reliability parameters for this stream.
 // The caller should hold the lock.
 func (s *Stream) setReliabilityParams(unordered bool, relType byte, relVal uint32) {
+	s.log.Debugf("[%s] reliability params: ordered=%v type=%d value=%d",
+		s.name, !unordered, relType, relVal)
 	s.unordered = unordered
 	s.reliabilityType = relType
 	s.reliabilityValue = relVal
@@ -177,7 +179,8 @@ func (s *Stream) Write(p []byte) (n int, err error) {
 
 // WriteSCTP writes len(p) bytes from p to the DTLS connection
 func (s *Stream) WriteSCTP(p []byte, ppi PayloadProtocolIdentifier) (n int, err error) {
-	if len(p) > math.MaxUint16 {
+	maxMessageSize := s.association.MaxMessageSize()
+	if len(p) > int(maxMessageSize) {
 		return 0, errors.Errorf("Outbound packet larger than maximum message size %v", math.MaxUint16)
 	}
 
